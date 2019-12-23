@@ -133,7 +133,7 @@ UTF8PROC_DLLEXPORT utf8proc_ssize_t utf8proc_iterate(
   end = str + ((strlen < 0) ? 4 : strlen);
   uc = *str++;
   if (uc < 0x80) {
-    *dst = uc;
+    *dst = (utf8proc_int32_t)uc;
     return 1;
   }
   // Must be between 0xc2 and 0xf4 inclusive to be valid
@@ -153,7 +153,7 @@ UTF8PROC_DLLEXPORT utf8proc_ssize_t utf8proc_iterate(
      uc = ((uc & 0xf)<<12) | ((*str & 0x3f)<<6) | (str[1] & 0x3f);
      if (uc < 0x800)
          return UTF8PROC_ERROR_INVALIDUTF8;
-     *dst = uc;
+     *dst = (utf8proc_int32_t)uc;
      return 3;
   }
   // 4-byte sequence
