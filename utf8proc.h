@@ -432,6 +432,22 @@ UTF8PROC_DLLEXPORT const char *utf8proc_errmsg(utf8proc_ssize_t errcode);
 UTF8PROC_DLLEXPORT utf8proc_ssize_t utf8proc_iterate(const utf8proc_uint8_t *str, utf8proc_ssize_t strlen, utf8proc_int32_t *codepoint_ref);
 
 /**
+ * An unsafe version of utf8proc_iterate.
+ * 
+ * Undefined behavior for invalid sequence of code units
+ */
+UTF8PROC_DLLEXPORT utf8proc_size_t utf8proc_iterate_unsafe(const utf8proc_uint8_t *strpos, utf8proc_int32_t *dst);
+
+/**
+ * Similar to utf8proc_iterate_unsafe, but works in the reverse direction.
+ * 
+ * @param offset the offset to start from -- start of a codepoint just past the target codepoint or end-of-string.
+ * 
+ * Undefined behavior for invalid sequence of code units
+ */
+UTF8PROC_DLLEXPORT utf8proc_size_t utf8proc_iterate_reverse_unsafe(const utf8proc_uint8_t *str, utf8proc_size_t offset, utf8proc_int32_t *codepoint_ref);
+
+/**
  * Check if a codepoint is valid (regardless of whether it has been
  * assigned a value by the current Unicode standard).
  *

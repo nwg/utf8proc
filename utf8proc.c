@@ -40,6 +40,7 @@
  *  Implementation of libutf8proc.
  */
 
+#include <assert.h>
 
 #include "utf8proc.h"
 
@@ -122,6 +123,7 @@ UTF8PROC_DLLEXPORT const char *utf8proc_errmsg(utf8proc_ssize_t errcode) {
 }
 
 #define utf_cont(ch)  (((ch) & 0xc0) == 0x80)
+#define utf_start(ch) (!(utf_cont(ch)))
 UTF8PROC_DLLEXPORT utf8proc_ssize_t utf8proc_iterate(
   const utf8proc_uint8_t *str, utf8proc_ssize_t strlen, utf8proc_int32_t *dst
 ) {
@@ -168,6 +170,50 @@ UTF8PROC_DLLEXPORT utf8proc_ssize_t utf8proc_iterate(
   }
   *dst = ((uc & 7)<<18) | ((*str & 0x3f)<<12) | ((str[1] & 0x3f)<<6) | (str[2] & 0x3f);
   return 4;
+}
+
+static inline utf8proc_ssize_t unsafe_get_codepoint(const utf8proc_uint8_t *src, utf8proc_int32_t *dst) {
+  assert(utf_start(src[0]));
+  int len = utf8proc_utf8class[(unsigned char)src[0]];
+  assert(len != 0);
+  switch (len) {
+    case 1: {
+      *dst = src[0];
+      return 1;
+    }
+    case 2: {
+      *dst = ((src[0] & 0x1f)<<6) | (src[1] & 0x3f);
+      return 2;
+    }
+    case 3: {
+      *dst = ((src[0] & 0xf)<<12) | ((src[1] & 0x3f)<<6) | (src[2] & 0x3f);
+      return 3;
+    }
+    case 4: {
+      *dst = ((src[0] & 7)<<18) | ((src[1] & 0x3f)<<12) | ((src[2] & 0x3f)<<6) | (src[3] & 0x3f);
+      return 4;
+    }
+    default: {
+      *dst = -1;
+      return UTF8PROC_ERROR_INVALIDUTF8;
+    }
+  }
+}
+
+UTF8PROC_DLLEXPORT utf8proc_size_t utf8proc_iterate_unsafe(const utf8proc_uint8_t *str, utf8proc_int32_t *dst) {
+  return unsafe_get_codepoint(str, dst);
+}
+
+UTF8PROC_DLLEXPORT utf8proc_size_t utf8proc_iterate_reverse_unsafe(
+  const utf8proc_uint8_t *str, utf8proc_size_t offset, utf8proc_int32_t *dst
+) {
+  assert(offset > 0);
+  do {
+    offset--;
+    assert(offset >= 0);
+  } while (utf_cont(str[offset]));
+
+  return unsafe_get_codepoint(&str[offset], dst);
 }
 
 UTF8PROC_DLLEXPORT utf8proc_bool utf8proc_codepoint_valid(utf8proc_int32_t uc) {
